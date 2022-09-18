@@ -4,7 +4,12 @@ from typing import Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from .database import engine, get_db
+from . import models
+from sqlalchemy.orm import Session
+from fastapi import Depends
 
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -38,6 +43,11 @@ while True:
 def root():
 
     return {'message': 'hello'}
+
+
+@app.get("/test")
+def test_post(db : Session = Depends(get_db)):
+    return {'message': 'success'}
 
 
 @app.get("/posts")
