@@ -1,32 +1,28 @@
 from fastapi import FastAPI
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
+from fastapi.middleware.cors import CORSMiddleware
 from .database import engine
 from . import models
-from .routers import posts, users, auth
+from .routers import posts, users, auth, votes
+from .config import settings
 
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-posts_data = [{'title': 'title of post1', 'content': 'content of post 1', 'id': 1},
-              {'title': 'title of post2', 'content': 'content of post 2', 'id': 2},
-              {'title': 'best footballer in the world', 'content': 'CR7', 'id': 3}]
-
-while True:
-    try:
-        conn = psycopg2.connect(host='localhost', database='FASTAPI-Project',
-                                user='postgres', password='1234', cursor_factory=RealDictCursor)
-        cursor = conn.cursor()
-        print("\n\n----------------------database connection successful----------------------\n\n")
-        break
-    except Exception as e:
-        print("Connection to database failed")
-        print(e)
-        time.sleep(2)
-
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 app.include_router(posts.router)
 app.include_router(users.router)
 app.include_router(auth.router)
+app.include_router(votes.router)
+
+
+@app.get('/')
+def root():
+    return {'message': 'hello world'}
