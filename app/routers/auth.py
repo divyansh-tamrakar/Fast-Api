@@ -1,11 +1,14 @@
 from fastapi import HTTPException, Depends, status
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
+from starlette.responses import RedirectResponse
 from .. import models, schemas, database, utils, oauth2
 from sqlalchemy.orm import Session
 from fastapi import APIRouter
 
 
-router = APIRouter()
+router = APIRouter(
+    tags=["login/logout",]
+)
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -21,3 +24,10 @@ def loginUser(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Sessi
     access_token = oauth2.create_access_token(data={'user_id': user.id})
 
     return {'access_token': access_token, 'token_type': 'bearer'}
+
+
+# @router.get("/{id}")
+# def logoutUser(id: int):
+#     response = RedirectResponse("/login", status_code=status.HTTP_200_OK)
+#     response.
+#     return response

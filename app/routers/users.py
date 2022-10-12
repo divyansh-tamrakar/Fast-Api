@@ -1,8 +1,11 @@
 from typing import List
+from typing import Optional
 from fastapi import Depends, status, HTTPException, Response, APIRouter
 from sqlalchemy.orm import Session
 from .. import models, schemas, utils
 from ..database import get_db
+from ..oauth2 import get_current_user
+# from .auth import logoutUser
 
 
 router = APIRouter(
@@ -12,14 +15,14 @@ router = APIRouter(
 
 
 @router.get("/", response_model=List[schemas.UserResponse])
-def getUsers(db: Session = Depends(get_db)):
-    users = db.query(models.User).all()
+def getUsers(db: Session = Depends(get_db), search: Optional[str] = "", current_user: int = Depends(get_current_user)):
+    users = db.query(models.User).filter(models.User.email.contains(search)).all()
     return users
 
 
 @router.get("/{id}", response_model=schemas.UserResponse)
-def getUser(id: int, db: Session = Depends(get_db)):
-    user_q = db.query(models.User).filter(models.User.id == id).first()
+def getUser(id: int, db: Session = Depends(get_db), search: Optional[str] = "", current_user: int = Depends(get_current_user)):
+    user_q = db.query(models.User).filter(models.User.id == id, models.User.email.contains(search)).first()
     if not user_q:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"user with id : {id} does not exists")
@@ -44,12 +47,16 @@ def createUser(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def deleteUser(id: int, db: Session = Depends(get_db)):
+def deleteUser(id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+    if current_user.id != id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not allowed")
     user_query = db.query(models.User).filter(models.User.id == id)
     user = user_query.first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"no such user exists")
     user_query.delete(synchronize_session=False)
+    # logoutUser(id)
     db.commit()
     return user
