@@ -28,6 +28,14 @@ def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.
     return posts
 
 
+@router.get("/", response_model=List[schemas.PostResponse])
+def getAllPosts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user),
+                limit: int = 10, skip: int = 0, search: Optional[str] = ""):
+    posts = db.query(models.Post).limit(limit).offset(skip).filter(models.Post.title.contains(search).all())
+
+    return posts
+
+
 @router.get("/user-posts", response_model=List[schemas.PostResponse])
 def getUsersPosts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
     # cursor.execute("""SELECT * FROM "Posts" ORDER BY created_at DESC """)
